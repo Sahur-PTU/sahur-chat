@@ -30,6 +30,8 @@ print("sahur-chat / v 1.0 / 03.08.2026") # сделать проверку на 
 # модерация чата, отображение в общем меню в каких беседах состоит юзер, возможность смены данных аккаунта, администрация всего мессенджера
 # возможность создавать новые каналы и управлять ими
 
+# точечное удаление сообщений 
+
 # постоянное фоновое чтение базы с сервера
 
 # key/read
@@ -44,17 +46,26 @@ smss = {
   "sessions" : {},
   "logs" : {},
   "updates" : {},
-  "complaints" : {},
+  "support" : { 
+    "user_2":{
+      "number":"1",
+      "username":"user_2",
+      "adminname":"",
+      "msgs":{
+        "1": { "name":"user_2", "num":1, "msg": "почему на реботает смена аккаунтов?", "time": "09-06 16:36:29"},
+            } 
+          } 
+        },
 
-  "admins":{"user_1" : "user_1"},
+  "admins": {"user_1" : "user_1"},
   "users": { "1" : {"name":"user_1", "passw":"1234", "activity":"inactive", "status":"unblocked"},
              "2" : {"name":"user_2", "passw":"1234", "activity":"inactive", "status":"unblocked"} },
 
   "channels":{
     "0001": {
-      "party":{ "None":{}, 
-                "user_1":{'rank':'admin', 'status':'unmute'}, 
-                "user_2":{'rank':'participant', 'status':'unmute'}},
+      "party": { "None" : {}, 
+                 "user_1" : {'rank':'admin', 'status':'unmute'}, 
+                 "user_2" : {'rank':'participant', 'status':'unmute'}},
       "msgs": {
         "1": { "name":"user_1", "num":1, "msg": "svo0", "time": "07-31 15:36:29"}, 
         "2": { "name":"user_2", "num":1, "msg": "svo1", "time": "07-31 15:36:29"} } }
@@ -108,22 +119,32 @@ def on_exit():
       print("завершаемся"), time.sleep(0.3)
       safe_exit = _exit() 
 
-
 def complain():
   while True:
-    print('[1] - Просмотреть свои жалобы') 
-    new_complain = input("Опишите вашу проблему: ") 
-    if new_complain == ' ': break
-    elif new_complain == '1': 
-      _read = read()
-      for n in smss['complaints']:
-        if log[0] == smss['complaints'][n]['name']:
-          print('['+smss['complaints'][n]['time']+']','['+smss['complaints'][n]['status']+']','@'+smss['complaints'][n]['name'],':',smss['complaints'][n]['complain']), time.sleep(0.1)
+    os.system("cls")
+    _read = read()
+    chat_n = log[0]
+    if chat_n in smss['support']:
+        for smska in smss['support'][chat_n]['msgs']:
+          if smss['support'][chat_n]['msgs'][smska]['name'] == log[0]:
+            print('['+smss['support'][chat_n]['msgs'][smska]['time']+']',Fore.GREEN+'@'+smss['support'][chat_n]['msgs'][smska]['name']+':',smss['support'][chat_n]['msgs'][smska]['msg'],Style.RESET_ALL)
+          else: 
+            print('['+smss['support'][chat_n]['msgs'][smska]['time']+']',Fore.BLUE+'@'+smss['support'][chat_n]['msgs'][smska]['name']+':',smss['support'][chat_n]['msgs'][smska]['msg'],Style.RESET_ALL)
+        new_msg = input(">> ")
+        if new_msg == " ": return "exit"
+        elif new_msg == "": continue
+        elif new_msg == 'del': pass  
+        else: 
+          num = len(smss['support'][chat_n]['msgs']) + 1
+          smss['support'][chat_n]['msgs'][num] = {'name':log[0],'num':num,'msg':new_msg,'time':str(datetime.datetime.now())[5:-7]}
+          update_write = write()
+          continue
     else: 
-      smss['complaints'][len(smss['complaints'])] = {'name':log[0],'complain':new_complain,'answer':'none','status':'new', 'time':str(datetime.datetime.now())[:-10]}
+      if len(smss['support']) > 0: num = len(smss['support'])
+      elif len(smss['support']) == 0: num = 1
+      smss['support'][chat_n] = {"number":num, "username": log[0], "adminname":"", "msgs":{"1":{'name':'sys','num':num,'msg':'новый чат','time':str(datetime.datetime.now())[5:-7]} }}
       update_write = write()
-      print("сообщение переданно администратору"), time.sleep(1)
-      break
+      continue
 
 
 def admin_menu():
@@ -135,7 +156,7 @@ def admin_menu():
       print("base - вывести всю базу") 
       print("users - список всех пользователей")
       print("channels - список всех каналов ")
-      print("complains - список жалоб\n")
+      print("support - чаты поддержки\n")
       print("id search - поиск по айди")
       print("name search - поиск по имени")
       print("ban - блокировка  пользователя")
@@ -147,34 +168,42 @@ def admin_menu():
       for j in smss['users']: print(j, smss['users'][j])
     elif command == "channels": 
       for ch in smss['channels']: print(ch)
-    elif command == "complains": 
+    elif command == "support": 
       _read = read()
-      num = 0
-      if len(smss['complaints']) > 0:
-        for com in smss["complaints"]: 
-          print('['+smss['complaints'][com]['time']+']','['+smss['complaints'][com]['status']+']','@'+smss['complaints'][com]['name'],':',smss['complaints'][com]['complain']), time.sleep(0.1)
-          num += 1
+      if len(smss['support']) > 0:
+        for user in smss["support"]: 
+          if len(smss['support'][user]) > 0:
+            for sms in smss['support'][user]['msgs']:
+              sms1 = smss['support'][user]['msgs'][sms]['msg']
+            print(' ['+smss['support'][user]['username']+']',':',smss['support'][user]['msgs'][sms]['msg'][0:30]+'...')
+          else: pass
       else: print("none")
       print("[1] - Выбрать\n[2] - Назад")
       de = input(">> ")
       if de == '1': 
-          _read = read()
-          num_com = input("номер жалобы: ")
-          if num_com in smss['complaints']: 
-            print(' @'+smss['complaints'][num_com]['name'],smss['complaints'][num_com]['complain'], "\n[1] - Ответить\n[2] - Назад")
-            de = input(">> ")
-            if de == "1":
-              answer = input("ответ: ")
-              smss['complaints'][num_com]['answer'] = answer
-              print('[1] - Статус "отвечен"')
-              de = input("> ")
-              if de == "1": smss['complaints'][num_com]['status'] = "completed"
-              else: continue
-              if answer == " ": break
+        _read = read()
+        chat_n = input("имя пользоваетеля: ")
+        if chat_n in smss['support']: 
+          while True:
+            os.system("cls")
+            for smska in smss['support'][chat_n]['msgs']:
+              if len(smss['support'][chat_n]['msgs']) == 0: break
+              if smss['support'][chat_n]['msgs'][smska]['name'] == log[0]:
+                print('['+smss['support'][chat_n]['msgs'][smska]['time']+']',Fore.GREEN+'@'+smss['support'][chat_n]['msgs'][smska]['name']+':',smss['support'][chat_n]['msgs'][smska]['msg'],Style.RESET_ALL)
+              else: print('['+smss['support'][chat_n]['msgs'][smska]['time']+']',Fore.BLUE+'@'+smss['support'][chat_n]['msgs'][smska]['name']+':',smss['support'][chat_n]['msgs'][smska]['msg'],Style.RESET_ALL)
+            answer = input(">> ")
+            if answer == ' ': break
+            elif answer == 'clear': 
+              smss['support'][chat_n]['msgs'].clear()
               update_write = write()
-            elif de == '2': continue
-          else: print("нету такой")
-      elif de == '2': continue
+              continue
+            else:
+              num = len(smss['support'][chat_n]['msgs'])+1
+              smss['support'][chat_n]['msgs'][num] = {'name':log[0],'num':num,'msg':answer,'time':str(datetime.datetime.now())[5:-7]}
+              update_write = write()
+              continue
+        else: print("нету такого чата")
+      elif de == '2' or de == ' ': continue
     elif command == "id search":
       id_search = input("id: ")
       if id_search in smss['users']: print(id_search, smss['users'][id_search])
@@ -214,25 +243,11 @@ def admin_menu():
 
 
 def login():
-  smss['sessions'].clear()
-  while True:
-    read_local()
-    if local['status'] == "True":
-      if flag[0] != 'change':
-        print(1)
-        log[0] = local['login']['name']
-        log[1] = local['login']['id']
-        log[2] = True
-        log[3] = local['login']['num_session']
-        num_session = len(smss['sessions'])
-        smss["users"][log[1]]["activity"] = "active"
-        smss["sessions"][num_session] = {'name':log[0], 'time':str(datetime.datetime.now())[:-10]}
-        update_write = write()
-        break
-    #os.system("cls")
-    else:
+  def login_1():
+    while True:
       data = read()
       user = input("name: ")
+      if user == " ": safe_exit = _exit()
       s = False
       for user1 in smss["users"]:
         if user == smss["users"][user1]["name"]:
@@ -253,7 +268,7 @@ def login():
               log[1] = user1
               log[2] = s
               log[3] = num_session
-              break
+              return "allowed"
             else: 
               log[0] = user
               print("ваша учетная запись заблокированна!")
@@ -261,10 +276,36 @@ def login():
               de = input("> ")
               if de == '1': complain()
           else: print("неправильно")
-    if s == False: 
-      print("нету таких"), time.sleep(1)
-      continue
-    elif s == True: break
+      if s == False: 
+         print("нету таких"), time.sleep(1)
+         continue
+      elif s == True: break
+  #os.system("cls")
+  smss['sessions'].clear()
+  while True:
+    read_local()
+    if local['status'] == "True":
+      if flag[0] != 'change':
+        if flag[0] != 'leave acc':
+          log[0] = local['login']['name']
+          log[1] = local['login']['id']
+          log[2] = True
+          log[3] = local['login']['num_session']
+          num_session = len(smss['sessions'])
+          smss["users"][log[1]]["activity"] = "active"
+          smss["sessions"][num_session] = {'name':log[0], 'time':str(datetime.datetime.now())[:-10]}
+          update_write = write()
+          break
+        else: 
+          _login_1 = login_1()
+          if _login_1 == "allowed": break
+      else: 
+        _login_1 = login_1()
+        if _login_1 == "allowed": break
+    else: 
+      _login_1 = login_1()
+      if _login_1 == "allowed": break
+     
 
 
 def menu() :
@@ -366,7 +407,7 @@ def menu() :
       print(' меню:')
       print('/rename - смена имени')
       print('/repassw - сменя пароля')
-      print('/change - смена ученой записи')
+      print('/change - смена учёной записи')
       print('/exit - выход из программы')
       print('/support - написать в поддержку')
       print('/create - создание канала')
@@ -388,14 +429,19 @@ def menu() :
 
 def main ():  # центральная догма
   while True:
-    flag = [None]
+    flag_1 = [None]
   
     def main_login (): 
         a1 = login()
     def main_menu ():
       while True:
         a2 = menu()
-        if a2 == 'change': return 'change'
+        if a2 == 'change': 
+          flag[0] = 'change'
+          local['login'].clear()
+          local['status'] = "False"
+          print(local), time.sleep(1)
+          update_write_local = write_local()
         if a2 == 'leave': continue
         if a2 == 'svo_1': continue
         if a2 == 'svo_2': break
@@ -406,15 +452,13 @@ def main ():  # центральная догма
       time.sleep(0.01)
       _read_local = read_local()
       _read = read()
-      if flag == 'in_the_dict':
+      if flag_1 == 'in_the_dict':
           b2 = main_menu()
           break
           #if b2 == 'login': continue
       else: 
           b1 = main_login()
           b2 = main_menu()
-          if b2 == 'change':
-            flag[0] = 'change'
           break
       
 
