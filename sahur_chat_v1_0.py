@@ -44,7 +44,10 @@ errors = [None]
 local = {"login":{}, "status":"False"}
 
 smss = {
-  "sessions" : {},
+  "sessions" : {      
+     "user_3" : {
+        "first": "2026-08-13 19:43",
+        "last": "2026-08-13 19:43"} },
   "logs" : {},
   "updates" : {},
   "support" : { 
@@ -109,8 +112,6 @@ def read() :
 
 def _exit(): 
   print(log), time.sleep(0.5)
-  try: del smss['sessions'][str(log[3])]
-  except KeyError: print("сессия не найдена"), time.sleep(0.4)
   smss['users'][log[1]]['activity'] = "inactive" 
   update_write_local = write_local()
   update_write = write()
@@ -189,6 +190,7 @@ def admin_menu():
       print("base - вывести всю базу") 
       print("users - список всех пользователей")
       print("channels - список всех каналов ")
+      print("sessions - список всех активных сессий")
       print("support - чаты поддержки\n")
       print("id search - поиск по айди")
       print("name search - поиск по имени")
@@ -271,10 +273,11 @@ def admin_menu():
         update_write = write()
     elif command == "del channel":
       c_name = input("название: ")
-      if id1 in smss['users']:
+      if c_name in smss['channels']:
         print(f"канал {c_name} удалён")
         del smss['channels'][c_name]
         update_write = write()
+      else: print("нет таких")
     elif command == "exit": break
     elif command == " ": break
 
@@ -295,7 +298,9 @@ def login():
               print("вход успешный"), time.sleep(0.5)
               num_session = len(smss['sessions'])
               smss["users"][user1]["activity"] = "active"
-              smss["sessions"][user] = {'name':user, 'time':str(datetime.datetime.now())[:-10]}
+              if user in smss['sessions']: first = smss['sessions'][user]['first']
+              else: first = str(datetime.datetime.now())[:-10]
+              smss["sessions"][user] = {'first':first, 'last':str(datetime.datetime.now())[:-10]}
               local['status'] = "True"
               local['login'] = {"name":user,"id":user1,"num_session":num_session}
               update_write_local = write_local()
@@ -321,6 +326,7 @@ def login():
   smss['sessions'].clear()
   while True:
     read_local()
+    read()
     if local['status'] == "True":
       if flag[0] != 'change':
         if flag[0] != 'leave acc':
@@ -330,7 +336,9 @@ def login():
           log[3] = local['login']['num_session']
           num_session = len(smss['sessions'])
           smss["users"][log[1]]["activity"] = "active"
-          smss["sessions"][num_session] = {'name':log[0], 'time':str(datetime.datetime.now())[:-10]}
+          if log[0] in smss['sessions']: first = smss['sessions'][log[0]]['first']
+          else: first = str(datetime.datetime.now())[:-10]
+          smss["sessions"][log[0]] = {'first':first, 'last':str(datetime.datetime.now())[:-10]}
           update_write = write()
           break
         else: 
@@ -370,74 +378,171 @@ def menu() :
         user = rename
         update_write = write()
         continue
-      else: print("имя должно содержать не менее 1го и не более 20 символов"), time.sleep(1.5)
+      else: print("имя должно содержать не менее 1-го и не более 20 символов"), time.sleep(1.5)
     if channel == 'repassw':
       repassw = input('новый пароль: ')
       if len(repassw) > 3 and len(repassw) < 30:
         smss['users'][user1]['passw'] = repassw 
         update_write = write()
         continue
-      else: print("пароль должен содержать не менее 3 и не более 30 символов"), time.sleep(1.5)
+      else: print("пароль должен содержать не менее 3-х и не более 30 символов"), time.sleep(1.5)
     elif channel == 'change': return 'change'
     elif channel == 'exit': safe_exit = _exit()
     elif channel == ' ': safe_exit = _exit()
     elif channel == 'support': complain()
+    elif channel == 'create': 
+      chat_name = input("название чата: ")
+      if len(chat_name) > 1 and len(chat_name) < 20:
+        smss['channels'][chat_name] = {'party':{log[0]:{"rank":"admin","status":"unmute"}}, 'msgs':{}}
+        num = len(smss['channels'][chat_name]['msgs'])+1
+        smss['channels'][chat_name]['msgs'][num] = {'name':'sys','num':num,'msg':'новый чат','time':str(datetime.datetime.now())[5:-7]}
+        update_write = write()
+        print("чат успешно создан!"), time.sleep(1)
+      else: print("название должено содержать не менее 1-го и не более 20 символов"), time.sleep(1.5)
     elif channel == 'admin': 
       if user in smss['admins']: admin_menu()
     elif channel in smss['channels']: 
       if user in smss['channels'][channel]["party"] or user in smss["admins"]:
           while True:
-           os.system('cls')
-           read_sms = read()
-           print(Fore.YELLOW+" Channel :", channel, Style.RESET_ALL)
-           for smska in smss['channels'][channel]['msgs']:
-             if smss['channels'][channel]['msgs'][smska]['name'] == user:
-              print('['+smss['channels'][channel]['msgs'][smska]['time']+']',Fore.GREEN+'@'+smss['channels'][channel]['msgs'][smska]['name']+':',smss['channels'][channel]['msgs'][smska]['msg'],Style.RESET_ALL)
-             else: 
-              print('['+smss['channels'][channel]['msgs'][smska]['time']+']',Fore.BLUE+'@'+smss['channels'][channel]['msgs'][smska]['name']+':',smss['channels'][channel]['msgs'][smska]['msg'],Style.RESET_ALL)
-             time.sleep(0.05)
-           new_msg = input('>> ')
-           if new_msg == '': continue
-           elif new_msg == ' ': break
-           elif new_msg == 'leave':
+            os.system('cls')
+            read_sms = read()
+            print(Fore.YELLOW+" Channel :", channel, Style.RESET_ALL)
+            for smska in smss['channels'][channel]['msgs']:
+              if smss['channels'][channel]['msgs'][smska]['name'] == user:
+                print('['+smss['channels'][channel]['msgs'][smska]['time']+']',Fore.GREEN+smska,'@'+smss['channels'][channel]['msgs'][smska]['name']+':',smss['channels'][channel]['msgs'][smska]['msg'],Style.RESET_ALL)
+              else: 
+                print('['+smss['channels'][channel]['msgs'][smska]['time']+']',Fore.BLUE+smska,'@'+smss['channels'][channel]['msgs'][smska]['name']+':',smss['channels'][channel]['msgs'][smska]['msg'],Style.RESET_ALL)
+              time.sleep(0.05)
+            new_msg = input('>> ')
+            if new_msg == '': continue
+            elif new_msg == ' ': break
+            elif new_msg == 'leave':
+                if user in smss['channels'][channel]['party']:
+                  del smss['channels'][channel]['party'][user]
+                  print("вы покинули беседу")
+                  print(smss['channels'][channel]), time.sleep(1)
+                  num = len(smss['channels'][channel]['msgs'])
+                  smss['channels'][channel]['msgs'][num] = {'name':'sys','num':num,'msg':f'@{user} покинул чат','time':str(datetime.datetime.now())[5:-7]}
+                  update_write = write()
+                  break
+                else: break 
+            elif new_msg == 'del': 
+              del_num = input("номер сообщения: ")
+              if del_num in smss['channels'][channel]['msgs']:
+                if user == smss['channels'][channel]['msgs'][del_num]['name']:
+                  print('<'+smss['channels'][channel]['msgs'][del_num]['msg']+'>', 'удалено'), time.sleep(1)
+                  del smss['channels'][channel]['msgs'][del_num]
+                  update_write = write()
+                else: print("это не ваше сообщение"), time.sleep(1)
+              else: print("нету такого сообщения"), time.sleep(1)
+            elif new_msg == 'clear':
               if user in smss['channels'][channel]['party']:
-                del smss['channels'][channel]['party'][user]
-                print("вы покинули беседу")
-                print(smss['channels'][channel]), time.sleep(1)
-                write()
-                break
-              else: break
-           elif new_msg == 'clear':
-            if user in smss['channels'][channel]['party']:
-              if smss['channels'][channel]['party'][user]['status'] == "unmute" or user in smss['admins']:
+                if smss['channels'][channel]['party'][user]['status'] == "unmute" or user in smss['admins']:
+                  smss['channels'][channel]['msgs'].clear()
+                  num = len(smss['channels'][channel]['msgs'])
+                  smss['channels'][channel]['msgs'][num] = {'name':'sys','num':num,'msg':'новый чат','time':str(datetime.datetime.now())[5:-7]}
+                  print("история обнулена"), time.sleep(1)
+                  write_sms = write()
+                  continue
+                else: print("вы замьючены"), time.sleep(1)
+              if user in smss['admins']:
                 smss['channels'][channel]['msgs'].clear()
+                num = len(smss['channels'][channel]['msgs'])
+                smss['channels'][channel]['msgs'][num] = {'name':'sys','num':num,'msg':'новый чат','time':str(datetime.datetime.now())[5:-7]}
                 print("история обнулена"), time.sleep(1)
                 write_sms = write()
-              else: print("вы замьючены"), time.sleep(1)
-            if user in smss['admins']:
-              smss['channels'][channel]['msgs'].clear()
-              print("история обнулена"), time.sleep(1)
-              write_sms = write()
-           else: 
-            if user in smss['channels'][channel]['party']:
-              if smss['channels'][channel]['party'][user]['status'] == "unmute":
-                if len(smss['channels'][channel]['msgs']) > 0: 
-                  num = int(tuple(smss['channels'][channel]['msgs'])[-1])+1
-                  num1 = int(tuple(smss['channels'][channel]['msgs'])[-1])+1
-                else: num = 0
-                smss['channels'][channel]['msgs'][num] = {'name':user,'num':num,'msg':new_msg,'time':str(datetime.datetime.now())[5:-7]}
-                write_sms = write()
-                continue  
-            if user in smss['admins']:
-                if len(smss['channels'][channel]['msgs']) > 0: 
-                  num = int(tuple(smss['channels'][channel]['msgs'])[-1])+1
-                  num1 = int(tuple(smss['channels'][channel]['msgs'])[-1])+1
-                else: num = 0
+            elif new_msg == 'add':
+              for user_in_chat in smss['channels'][channel]['party']:
+                print(user_in_chat), time.sleep(0.3)
+                if smss['channels'][channel]['party'][user_in_chat]['rank'] == 'admin': flag[0] = 'in_admins'
+              if flag[0] == 'in_admins' or user in smss['admins']:
+                add_user_name = input("имя пользователя: ")
+                for num_user in smss['users']:
+                  if add_user_name == smss['users'][num_user]['name']: 
+                    smss['channels'][channel]['party'][add_user_name] = {'rank':'participant','status':'unmute'}
+                    print(f"пользователь {add_user_name} успешно добавлен!"), time.sleep(1)
+                    num = len(smss['channels'][channel]['msgs'])
+                    smss['channels'][channel]['msgs'][num] = {'name':'sys','num':num,'msg':f'@{add_user_name} добавлен в чат','time':str(datetime.datetime.now())[5:-7]}
+                    update_write = write()
+                    flag[1] = 'in_users'
+                  else: flag[1] = 'not_in_users'
+                if flag[1] == 'not_in_users': print("пользователя с таким именем не существует"), time.sleep(1.5)
+              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1.5)
+            elif new_msg == 'kick':
+              for user_in_chat in smss['channels'][channel]['party']:
+                print(user_in_chat), time.sleep(0.3)
+                if smss['channels'][channel]['party'][user_in_chat]['rank'] == 'admin': flag[0] = 'in_admins'
+              if flag[0] == 'in_admins' or user in smss['admins']:
+                kick_user_name = input("имя пользователя: ")
+                for num_user in smss['users']:
+                  if kick_user_name == smss['users'][num_user]['name']: 
+                    if kick_user_name in smss['channels'][channel]['party']:
+                      del smss['channels'][channel]['party'][kick_user_name]
+                      print(f"пользователь {kick_user_name} успешно удалён из беседы!"), time.sleep(1)
+                      num = len(smss['channels'][channel]['msgs'])
+                      smss['channels'][channel]['msgs'][num] = {'name':'sys','num':num,'msg':f'@{kick_user_name} удалён из чата','time':str(datetime.datetime.now())[5:-7]}
+                      update_write = write()
+                      flag[1], flag[2] = 'in_users', 'in_party'
+                    else: flag[2] = 'not_in_party'
+                  else: flag[1] = 'not_in_users'
+                if flag[1] == 'not_in_users': print("пользователя с таким именем не существует"), time.sleep(1.5)
+                elif flag[2] == 'not_in_party': print("пользователь не состоит в беседе"), time.sleep(1.5)
+              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1.5)
+            elif new_msg == 'mute':
+              for user_in_chat in smss['channels'][channel]['party']:
+                print(user_in_chat), time.sleep(0.3)
+                if smss['channels'][channel]['party'][user_in_chat]['rank'] == 'admin': flag[0] = 'in_admins'
+              if flag[0] == 'in_admins' or user in smss['admins']:
+                mute_user_name = input("имя пользователя: ")
+                for num_user in smss['users']:
+                  if mute_user_name == smss['users'][num_user]['name']: 
+                    if mute_user_name in smss['channels'][channel]['party']:
+                      smss['channels'][channel]['party'][mute_user_name]['status'] = 'mute'
+                      print(f"пользователь {mute_user_name} успешно замьючен!"), time.sleep(1)
+                      num = len(smss['channels'][channel]['msgs'])
+                      smss['channels'][channel]['msgs'][num] = {'name':'sys','num':num,'msg':f'@{mute_user_name} замьючен','time':str(datetime.datetime.now())[5:-7]}
+                      update_write = write()
+                      flag[1], flag[2] = 'in_users', 'in_party'
+                    else: flag[2] = 'not_in_party'
+                  else: flag[1] = 'not_in_users'
+                if flag[1] == 'not_in_users': print("пользователя с таким именем не существует"), time.sleep(1.5)
+                elif flag[2] == 'not_in_party': print("пользователь не состоит в беседе"), time.sleep(1.5)
+              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1.5)
+
+            elif new_msg == 'unmute':
+              for user_in_chat in smss['channels'][channel]['party']:
+                print(user_in_chat), time.sleep(0.3)
+                if smss['channels'][channel]['party'][user_in_chat]['rank'] == 'admin': flag[0] = 'in_admins'
+              if flag[0] == 'in_admins' or user in smss['admins']:
+                mute_user_name = input("имя пользователя: ")
+                for num_user in smss['users']:
+                  if mute_user_name == smss['users'][num_user]['name']: 
+                    if mute_user_name in smss['channels'][channel]['party']:
+                      smss['channels'][channel]['party'][mute_user_name]['status'] = 'unmute'
+                      print(f"пользователь {mute_user_name} успешно размьючен!"), time.sleep(1)
+                      num = len(smss['channels'][channel]['msgs'])
+                      smss['channels'][channel]['msgs'][num] = {'name':'sys','num':num,'msg':f'@{mute_user_name} размьючен','time':str(datetime.datetime.now())[5:-7]}
+                      update_write = write()
+                      flag[1], flag[2] = 'in_users', 'in_party'
+                    else: flag[2] = 'not_in_party'
+                  else: flag[1] = 'not_in_users'
+                if flag[1] == 'not_in_users': print("пользователя с таким именем не существует"), time.sleep(1.5)
+                elif flag[2] == 'not_in_party': print("пользователь не состоит в беседе"), time.sleep(1.5)
+              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1.5)
+            else: 
+              if user in smss['channels'][channel]['party']:
+                if smss['channels'][channel]['party'][user]['status'] == "unmute":
+                  num = len(smss['channels'][channel]['msgs'])
+                  smss['channels'][channel]['msgs'][num] = {'name':user,'num':num,'msg':new_msg,'time':str(datetime.datetime.now())[5:-7]}
+                  write_sms = write()
+                  continue 
+              if user in smss['admins']:
+                num = len(smss['channels'][channel]['msgs'])
                 smss['channels'][channel]['msgs'][num] = {'name':user,'num':num,'msg':new_msg,'time':str(datetime.datetime.now())[5:-7]}
                 write_sms = write()
                 continue
               #print(smss), time.sleep(2)
-            else: print('вы замьючены'), time.sleep(1)
+              else: print('вы замьючены'), time.sleep(1)
       else: print(f'пользователь @{user} не состоит в беседе'), time.sleep(1)
     else: print("нету таких"), time.sleep(1)
     if channel == "help":
@@ -476,6 +581,7 @@ def main ():  # центральная догма
         if a2 == 'change': 
           flag[0] = 'change'
           smss['users'][log[1]]['activity'] = "inactive"
+          del smss['sessions'][log[0]]
           local['login'].clear()
           local['status'] = "False"
           print(local), time.sleep(1)
