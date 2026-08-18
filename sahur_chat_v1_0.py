@@ -1,12 +1,15 @@
-# Sahur-PTU Chat / v 0.3.1 / 16.08.2026
+# Sahur-PTU Chat / v 0.3.2 / 18.08.2026
 
 import os
 import sys
 import json
 import time
 import datetime
+import subprocess
+import threading
 import atexit
 from colorama import init, Fore, Back, Style
+
 
 init()
 # os.system('mode con: cols=60 lines=17')
@@ -29,11 +32,12 @@ print("sahur-chat / v 0.3.2 / 17.08.2026") # сделать проверку н�
 log = [None, None, None, None]
 flag = [None, None, None, None]
 errors = [None] 
+mode = ["manual_update"]
 
 forbidden = ['help','rename','repassw','change','exit',' ','support','create','rename chat','del chat','party','clear','leave','add','kick',
 'mute','unmute','admins','base','users','channels','chats','sessions','support','id search','name search','ban','unban','del user','del channel']
 
-local = {"login":{}, "status":"False"}
+local = {"login":{}, "status":"False", "settings":{"mode":"manual_update"}, "cache":{"channel":"0001", "username":"user_2"}}
 
 smss = {
   "sessions" : {      
@@ -43,6 +47,7 @@ smss = {
         "last": "2026-08-13 19:43"} },
   "logs" : {},
   "updates" : {},
+  "applications" : {},
   "support" : { 
     "user_2":{
       "number":"1",
@@ -71,17 +76,21 @@ smss = {
 def error(): # функция обработки ошибки. хз зачем сделал. путь лежит пока что
   print(f"ошибка {errors[0]}")
 
-def read_local(): # запись локальных данных
+# os.mkdir('data')
+
+def write_local() : # запись локальных данных
+  with open('local.json', 'w', encoding='utf-8') as file:  
+    json.dump(local, file, ensure_ascii=False, indent=2)
+
+def read_local(): # чтение локальных данных
   try: 
     with open('local.json', 'r', encoding='utf-8') as file:
       data = json.load(file)
       local.clear()
       local.update(data)
-  except FileNotFoundError: print('файл "local" не найден'), time.sleep(1)
-
-def write_local() : # чтение локальных данных
-  with open('local.json', 'w', encoding='utf-8') as file:  
-    json.dump(local, file, ensure_ascii=False, indent=2)
+  except FileNotFoundError: 
+    print('файл "local" не найден'), time.sleep(1)
+    _write_local = write_local()
 
 
 
@@ -102,7 +111,7 @@ def read() : # чтение данных
 
 def _exit(): # безопасный выход
   print(log), time.sleep(0.5)
-  smss['users'][log[1]]['activity'] = "inactive" 
+  if log[1] in smss['users']: smss['users'][log[1]]['activity'] = "inactive" 
   update_write_local = write_local()
   update_write = write()
   flag[1] = True
@@ -123,7 +132,7 @@ def check_admin(channel, username) : # сверка имени админа в �
   else: return "fake"
 
 def system_msg(chat_name, msg) : # отправка системного сообщения
-    num = len(smss['channels'][chat_name]['msgs'])+1
+    num = len(smss['channels'][chat_name]['msgs']) + 1
     smss['channels'][chat_name]['msgs'][num] = {'name':'sys','num':num,'msg':msg,'time':str(datetime.datetime.now())[5:-7]}
     update_write = write()
 
@@ -271,7 +280,7 @@ def login(): # авторизация
     while True:
       data = read()
       user = input("name: ")
-      if user == " ": safe_exit = _exit()
+      if user == " ": return "exit"
       s = False
       for user1 in smss["users"]:
         if user == smss["users"][user1]["name"]:
@@ -327,15 +336,34 @@ def login(): # авторизация
           break
         else: 
           _login_1 = login_1()
-          if _login_1 == "allowed": break
+          if _login_1 == "allowed" or _login_1 == "exit": break
       else: 
         _login_1 = login_1()
-        if _login_1 == "allowed": break
+        if _login_1 == "allowed" or _login_1 == "exit": break
     else: 
       _login_1 = login_1()
-      if _login_1 == "allowed": break
+      if _login_1 == "allowed" or _login_1 == "exit": break
 
-
+def registration() : # регистрация
+  while True:
+    try:
+      name = input("введите имя: ")
+      if name == " ": return "exit"
+      passw = input("придумайте пароль: ")
+      if passw == " ": return "exit"
+      if len(passw) > 3 and len(passw) < 30:
+        for id_users in smss['users']:
+          if name == smss['users'][id_users]['name']:
+            print("пользователь с таким именем уже есть"), time.sleep(1)
+            break
+        else:
+          smss['applications'][name] = {"name":name, 'passw':passw, "time":str(datetime.datetime.now())[5:-7]} 
+          update_write = write()
+          print("заявка на регистрацию успешно отправлена!"), time.sleep(1)
+          print("модерация мессенджера рассмотрит её в ближайшее время"), time.sleep(1.5)
+          return "allowed"
+      else: print("пароль должен содержать не менее 3-х и не более 30 символов"), time.sleep(1.5)
+    except KeyboardInterrupt: break
 
 
 def menu() : # основное меню
@@ -348,7 +376,23 @@ def menu() : # основное меню
     try: channel = input('channel : ')
     except KeyboardInterrupt: _exit()
 
-    if channel == 'chats': # список чатов
+    if channel == 'settings': 
+        print("[1] - Режим отображения истории"), time.sleep(0.1)
+        print("[2] - Назад"), time.sleep(0.1)
+        de = input("> ")
+        if de == '1': 
+          print("[1] - Ручное обновление"), time.sleep(0.1)
+          print("[2] - Отдельное окно"), time.sleep(0.1)
+          print("[3] - Комбинированный"), time.sleep(0.1)
+          if de == '1': local['settings']['mode'] = "manual_update"
+          elif de == '2': local['settings']['mode'] = "separate_update"
+          elif de == '3': local['settings']['mode'] = "auto_update"
+          elif de == ' ': continue
+          _write_local = write_local()
+        elif de == '2' or de == ' ': continue
+
+
+    elif channel == 'chats': # список чатов
       for chat_name in smss['channels']:
           if user in smss['channels'][chat_name]['party']:
             for sms in smss['channels'][chat_name]['msgs']: pass
@@ -459,6 +503,8 @@ def menu() : # основное меню
 
     elif channel in smss['channels']: # открытие чата
       if user in smss['channels'][channel]["party"] or user in smss["admins"]:
+        
+        if mode[0] == "manual_update":
           while True:
             os.system('cls')
             read_sms = read()
@@ -608,10 +654,17 @@ def menu() : # основное меню
               else: 
                 print("вы были исключены"), time.sleep(1)
                 break
+        elif mode[0] == "separate_update":
+          print("sv"), time.sleep(3)
+          subprocess.Popen([r'D:\.Profile\Desktop\hackerskie_codi\Python\projects\history_msg.exe'])
+
+        elif mode[0] == "auto_update": pass
+        
       else: print(f'пользователь @{user} не состоит в беседе'), time.sleep(1)
 
     elif channel == "help": # шпоргалка 
       print(' меню:')
+      print('/settings - меню настроек')
       print('/chats - список чатов в которых состоишь')
       print('/rename - смена имени')
       print('/repassw - сменя пароля')
@@ -638,14 +691,44 @@ def menu() : # основное меню
       input("< ")
     else: print("нету таких"), time.sleep(1)
 
+def _mode() :
+  _read_local = read_local()
+  if local['settings']['mode'] == "manual_update": mode[0] = "manual_update"
+  if local['settings']['mode'] == "separate_update": mode[0] = "separate_update"
+  if local['settings']['mode'] == "auto_update": mode[0] = "auto_update"
+
+
+def start_menu() : # начальное меню
+  if local['status'] == 'True': return "loginned"
+  while True:
+    try:
+      print("[1] - Вход")
+      print("[2] - Регистрация")
+      de = input(">> ")
+      if de == " ": safe_exit = _exit()
+      elif de == '1': return "login"
+      elif de == '2': return "reg"
+    except KeyboardInterrupt: break
+
 
 def main ():  # центральная догма
   while True:
     flag_1 = [None]
-  
-    def main_login (): 
+    def main_start() :
+      while True: 
+        a0 = start_menu()
+        if a0 == "loginned": break
+        elif a0 == 'login': return "login"
+        elif a0 == 'reg': 
+          r0 = registration()
+          if r0 == 'exit': continue
+          if r0 == 'allowed': continue
+        else: pass
+
+    def main_login() : 
         a1 = login()
-    def main_menu ():
+        if a1 == "exit": return "exit"
+    def main_menu() :
       while True:
         a2 = menu()
         if a2 == 'change': 
@@ -664,17 +747,32 @@ def main ():  # центральная догма
         break
 
     while True: # основной исполняемый алгоритм
-      time.sleep(0.01)
-      _read_local = read_local()
-      _read = read()
-      if flag_1 == 'in_the_dict':
-          b2 = main_menu()
-          break
-          #if b2 == 'login': continue
-      else: 
-          b1 = main_login()
-          b2 = main_menu()
-          break
+
+      def loop_one(): # поток основной
+        while True:
+          _read_local = read_local()
+          _read = read()
+          if flag_1 == 'in_the_dict':
+            b2 = main_menu()
+            break
+          else: 
+            b0 = main_start()
+            b1 = main_login()
+            if b1 == "exit": continue
+            b2 = main_menu()
+            break
+      def loop_two(): # поток чтения
+        while True:
+          time.sleep(0.1)
+          _read_local = read_local()
+          _read = read()
+
+      t1 = threading.Thread(target=loop_one)
+      t2 = threading.Thread(target=loop_two)
+      t1.start()
+      t2.start()
+      t1.join()
+      t2.join()
       
 
 
