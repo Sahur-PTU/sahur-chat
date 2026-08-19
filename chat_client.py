@@ -8,7 +8,10 @@ import datetime
 import subprocess
 import threading
 import atexit
+
 from colorama import init, Fore, Back, Style
+
+import auto_history 
 
 
 init()
@@ -32,7 +35,7 @@ print("sahur-chat / v 0.3.2 / 17.08.2026") # сделать проверку н�
 log = [None, None, None, None]
 flag = [None, None, None, None]
 errors = [None] 
-mode = ["manual_update"]
+mode = ["auto_update"]
 
 forbidden = ['help','rename','repassw','change','exit',' ','support','create','rename chat','del chat','party','clear','leave','add','kick',
 'mute','unmute','admins','base','users','channels','chats','sessions','support','id search','name search','ban','unban','del user','del channel']
@@ -658,7 +661,10 @@ def menu() : # основное меню
           print("sv"), time.sleep(3)
           subprocess.Popen([r'D:\.Profile\Desktop\hackerskie_codi\Python\projects\history_msg.exe'])
 
-        elif mode[0] == "auto_update": pass
+        elif mode[0] == "auto_update": 
+          auto_history.main()
+
+
         
       else: print(f'пользователь @{user} не состоит в беседе'), time.sleep(1)
 
