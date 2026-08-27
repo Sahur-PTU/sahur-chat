@@ -1,4 +1,4 @@
-# sahur-chat server / v 1.0 / 13.08.2026
+# sahur-chat server / v 0.3.1 / 18.08.2026
 
 import os
 import sys
@@ -85,6 +85,13 @@ def check_party() :
         pass
   #except: None
 
+def login():
+  while True:
+    _read = read()
+    username = input("username: ")
+    if username == " ": exit()
+    elif username in data['users']: return username
+    else: continue
 
 def menu() :
     username = login()
@@ -100,7 +107,7 @@ def menu() :
       elif msg == "clear": data["msgs"].clear()
       else: data['msgs'][len(data['msgs'])] = {'name':username, 'msg':msg, 'time':str(datetime.datetime.now())[5:-7]}
       update_write = write()
-      _write = write_data_server()
+      #_write = write_data_server()
   #except: pass
 
 
