@@ -13,10 +13,23 @@ from colorama import init, Fore, Back, Style
 
 import auto_history 
 
+# Правки:
+# 1. Пофиксить ограничения для админов и статус владельца 
+# 2. Запретить админу удалять свой же аккаунт через панель админа 
+# 3. Добавить переменные с данными версии и добавить возможность узнавать их   *
+# 4. Починить подгон параметров и сделать вариацию для телефона
+# 5. Вычислять айди используя конвертирование айди последнего пользователя
+# 6. Получше изолировать админ панель
+# 7. Смену аккаунтов починить
+# 8. Выбрать и наладить комбинированный режим
+# 9. Нормальзовать работу потоков и их остановке по команде
+# 10. Начать тестировку API
+# 11. Сделать протокол полного отключения работы мессенджера прямо из клиента админа 
 
-init()
+init()  
 # os.system('mode con: cols=60 lines=17')
-print("sahur-chat / v 0.3.2 / 17.08.2026") # сделать проверку на обновления 
+version = "sahur-chat / v 0.3.3 / 09.08.2026"
+print(version) # сделать проверку на обновления 
 
 #  /admin - открыть админ меню
 
@@ -66,7 +79,7 @@ smss = {
   "channels":{
     "0001": {
       "chat_name":"0001",
-      "party": { "user_1" : {'rank':'admin', 'status':'unmute'}, 
+      "party": { "user_1" : {'rank':'owner', 'status':'unmute'}, 
                  "user_2" : {'rank':'participant', 'status':'unmute'}},
       "msgs": {
         "1": { "name":"user_1", "num":1, "msg": "svo0", "time": "07-31 15:36:29"}, 
@@ -85,39 +98,36 @@ def crossPlatform():
 
 def error(err, sec): # функция обработки ошибки
   #errors = [['001', ],]
-  print(f"ошибка : {err}"), time.sleep(sec)
+  print(f"ошибка : {err}"); time.sleep(sec)
 
 # os.mkdir('data')
 
 def write_local() : # запись локальных данных
-  with open('local.json', 'w', encoding='utf-8') as file:  
+  with open('data/local.json', 'w', encoding='utf-8') as file:  
     json.dump(local, file, ensure_ascii=False, indent=2)
 
 def read_local(): # чтение локальных данных
   try: 
-    with open('local.json', 'r', encoding='utf-8') as file:
-      data = json.load(file)
-      local.clear()
-      local.update(data)
+    with open('data/local.json', 'r', encoding='utf-8') as file:
+      new_data = json.load(file)
+      local.clear(); local.update(new_data)
   except FileNotFoundError: 
-    print('файл "local" не найден'), time.sleep(1)
-    _write_local = write_local()
-
+    print('файл "local.json" не найден'); time.sleep(1)
+    _write_local = write_local(); print("создан в локальной папке"); time.sleep(1)
 
 
 def write() : # запись данных
-  with open('smski.json', 'w', encoding='utf-8') as file:  
+  with open('data/smski.json', 'w', encoding='utf-8') as file:  
     json.dump(smss, file, ensure_ascii=False, indent=2)
 
 def read() : # чтение данных
   try: 
-    with open('smski.json', 'r', encoding='utf-8') as file:
-      data = json.load(file)
-      smss.clear()
-      smss.update(data)
+    with open('data/smski.json', 'r', encoding='utf-8') as file:
+      new_data = json.load(file)
+      smss.clear(); smss.update(new_data)
   except FileNotFoundError: 
-    print('файл "smski" не найден'), time.sleep(1)
-    _write = write()
+    print('файл "smski.json" не найден'); time.sleep(1)
+    _write = write(); print("создан в локальной папке"); time.sleep(1)
 
 
 def _exit(): # безопасный выход
@@ -126,14 +136,14 @@ def _exit(): # безопасный выход
   update_write_local = write_local()
   update_write = write()
   flag[1] = True
-  print('сохранение'), time.sleep(0.5)
+  print('сохранение'); time.sleep(0.5)
   sys.exit()
 
 @atexit.register
 def on_exit(): # отслеживание выхода
     if flag[1] == True: pass
     else:
-      print("завершаемся"), time.sleep(0.5)
+      print("завершаемся"); time.sleep(0.5)
       safe_exit = _exit() 
 
 def check_admin(channel, username) : # сверка имени админа в базе
@@ -172,6 +182,8 @@ def support_chat(chat_n): # чат с поддержкой
       smss['support'][chat_n] = {"number":num,"username":log[0],"adminname":"","msgs":{"1":{'name':'sys','num':num,'msg':'новый чат','time':str(datetime.datetime.now())[5:-7]} }}
       update_write = write()
       continue
+
+
 
 def api() : # обмен с сервером
   try:
@@ -215,20 +227,24 @@ def admin_menu(): # админ панель
       print("/unban - разблокировка пользователя")
       print("/del user - удаление пользователя")
       print("/del channel - удаление канала")
-    if command == "base" or command == '/base': print(smss) # вывод всей базы
+    if command == "base" or command == '/base': # вывод всей базы
+      for dataSUBBLOK in smss:
+        print('*',dataSUBBLOK, ':'); time.sleep(0.1)
+        for dataLINE in smss[dataSUBBLOK]:
+          print(' ', smss[dataSUBBLOK][dataLINE])
     elif command == "users" or command == '/users': # список пользователей
-      for j in smss['users']: print(j, smss['users'][j]), time.sleep(0.01)
+      for j in smss['users']: print(j, smss['users'][j]); time.sleep(0.01)
     elif command == "admins" or command == '/admins': # список админов
-      for j in smss['admins']: print(j, smss['admins'][j]), time.sleep(0.01)
+      for j in smss['admins']: print(j, smss['admins'][j]); time.sleep(0.01)
     elif command == "channels" or command == '/channels': # список чатов
       for chat_name in smss['channels']:
           for sms in smss['channels'][chat_name]['msgs']: pass
-          print(' ['+smss['channels'][chat_name]['chat_name']+']',':',smss['channels'][chat_name]['msgs'][sms]['msg'][0:30]+'...'), time.sleep(0.05)
+          print(' ['+smss['channels'][chat_name]['chat_name']+']',':',smss['channels'][chat_name]['msgs'][sms]['msg'][0:30]+'...'); time.sleep(0.05)
     elif command == "sessions" or command == '/sessions': # список сессий
-      for j in smss['sessions']: print('['+j+']\n', 'first :',smss['sessions'][j]['first'],'\n last  :',smss['sessions'][j]['last']), time.sleep(0.05)
+      for j in smss['sessions']: print('['+j+']\n', 'first :',smss['sessions'][j]['first'],'\n last  :',smss['sessions'][j]['last']); time.sleep(0.05)
     elif command == "applications" or command == '/applications': # список зачвок на регистрацию
       for applc in smss['applications']:
-        print('',smss['applications'][applc]['num'], smss['applications'][applc]), time.sleep(0.05)
+        print('',smss['applications'][applc]['num'], smss['applications'][applc]); time.sleep(0.05)
       applc1 = input("номер заявки: ")
       if applc1 in smss['applications']:
         print(smss['applications'][applc1], "\n[1] - Одобрить\n[2] - Отклонить")
@@ -239,9 +255,9 @@ def admin_menu(): # админ панель
                                 "activity": "inactive", "status": "unblocked", "reg_date": str(datetime.datetime.now())[:-10] }
           del smss['applications'][applc1]
           update_write = write()
-          print("пользователь успешно добавлен!"), time.sleep(1)
+          print("пользователь успешно добавлен!"); time.sleep(1)
         else: pass
-      else: print("нету такой"), time.sleep(1)
+      else: print("нету такой"); time.sleep(1)
     elif command == "support" or command == '/support': # меню поддержки
      while True:
       _read = read()
@@ -264,7 +280,7 @@ def admin_menu(): # админ панель
     elif command == "id search" or command == '/id search': # поиск по айди
       id_search = input("id: ")
       if id_search in smss['users']: print(id_search, smss['users'][id_search])
-      else: print("нету такого"), time.sleep(0.2)
+      else: print("нету такого"); time.sleep(0.2)
     elif command == 'name search' or command == '/name search': # поиск по имени
       name = input("имя: ")
       for id1 in smss['users']:
@@ -287,9 +303,17 @@ def admin_menu(): # админ панель
     elif command == "del user" or command == '/del user': # удаление пользователя
       id1 = input("id: ")
       if id1 in smss['users']:
-        print(f"пользователь {id1} {smss['users'][id1]['name']} удалён")
-        del smss['users'][id1]
-        update_write = write()
+        del_username = smss['users'][id1]['name']
+        print(f"{Fore.RED}точно удалить все данные пользователя [{id1}] @{del_username}?{Fore.RESET}")
+        de = input(" Y/N ? : ")
+        if de == 'y' or de == 'Y':
+          l_f_a = leave_from_acc(log[0], log[1])
+          del smss['users'][id1]
+          update_write = write()
+          print(f"пользователь {id1} {del_username} удалён"); time.sleep(1)
+          if id1 == log[1]: 
+            return "back_in_start_menu"
+        else: continue
     elif command == "del channel" or command == '/del channel': # удаление чата
       c_name = input("название: ")
       if c_name in smss['channels']:
@@ -313,7 +337,7 @@ def login(): # авторизация
           passw = input("passw: ")
           if passw == smss["users"][user1]["passw"]:
             if smss['users'][user1]['status'] == 'unblocked':
-              print("вход успешный"), time.sleep(0.5)
+              print("вход успешный"); time.sleep(0.5)
               num_session = len(smss['sessions'])
               smss["users"][user1]["activity"] = "active"
               if user in smss['sessions']: first = smss['sessions'][user]['first']
@@ -337,15 +361,14 @@ def login(): # авторизация
               if de == '1': support_chat(user)
           else: print("неправильно")
       if s == False: 
-         print("нету таких"), time.sleep(1)
+         print("нету таких"); time.sleep(1)
          continue
       elif s == True: break
   #os.system(parameters['clearOutput'])
-  smss['sessions'].clear()
   while True:
     _read_local = read_local()
     _read = read()
-    if local['status'] == "True": # проверка на наличия сохранения логина в локальном хранилище
+    if local['status'] == "True" and len(local['login']) > 2: # проверка на наличия сохранения логина в локальном хранилище
       if flag[0] != 'change': 
         if flag[0] != 'leave acc':
           log[0] = local['login']['name']
@@ -379,35 +402,37 @@ def registration() : # регистрация
       if len(passw) > 3 and len(passw) < 30:
         for id_users in smss['users']:
           if name == smss['users'][id_users]['name']:
-            print("пользователь с таким именем уже есть"), time.sleep(1)
+            print("пользователь с таким именем уже есть"); time.sleep(1)
             break
         else:
           num = str(len(smss['applications']) + 1) 
           smss['applications'][num] = {"num":num,"name":name, 'passw':passw, "time":str(datetime.datetime.now())[5:-7]} 
           update_write = write()
-          print("заявка на регистрацию успешно отправлена!"), time.sleep(1)
-          print("модерация мессенджера рассмотрит её в ближайшее время"), time.sleep(1.5)
+          print("заявка на регистрацию успешно отправлена!"); time.sleep(1)
+          print("модерация мессенджера рассмотрит её в ближайшее время"); time.sleep(1.5)
           return "allowed"
-      else: print("пароль должен содержать не менее 3-х и не более 30 символов"), time.sleep(1.5)
+      else: print("пароль должен содержать не менее 3-х и не более 30 символов"); time.sleep(1.5)
     except KeyboardInterrupt: break
 
 def commands(channel, user, user1) :
   #try:
-    if channel == '/settings': 
-        print("[1] - Режим отображения истории"), time.sleep(0.1)
-        print("[2] - Назад"), time.sleep(0.1)
+    if channel == '/version': print(version); input("< ")
+
+    elif channel == '/settings': 
+        print("[1] - Режим отображения истории"); time.sleep(0.1)
+        print("[2] - Назад"); time.sleep(0.1)
         de = input("> ")
         if de == '1': 
-          print("[1] - Ручное обновление"), time.sleep(0.1)
-          print("[2] - Отдельное окно"), time.sleep(0.1)
-          print("[3] - Комбинированный"), time.sleep(0.1)
+          print("[1] - Ручное обновление"); time.sleep(0.1)
+          print("[2] - Отдельное окно"); time.sleep(0.1)
+          print("[3] - Комбинированный"); time.sleep(0.1)
           de == input(">> ")
           if de == '1': local['settings']['mode'] = "manual_update"
           elif de == '2': local['settings']['mode'] = "separate_update"
           elif de == '3': local['settings']['mode'] = "auto_update"
           else: return 'continue'
           _write_local = write_local()
-          print("настройки сохранены"), time.sleep(1)
+          print("настройки сохранены"); time.sleep(1)
         elif de == '2' or de == ' ': return 'continue'
 
 
@@ -415,7 +440,7 @@ def commands(channel, user, user1) :
       for chat_name in smss['channels']:
           if user in smss['channels'][chat_name]['party']:
             for sms in smss['channels'][chat_name]['msgs']: pass
-            print(' ['+smss['channels'][chat_name]['chat_name']+']',':',smss['channels'][chat_name]['msgs'][sms]['msg'][0:30]+'...'), time.sleep(0.05)
+            print(' ['+smss['channels'][chat_name]['chat_name']+']',':',smss['channels'][chat_name]['msgs'][sms]['msg'][0:30]+'...'); time.sleep(0.05)
       input("< ")
       return 'continue'
 
@@ -428,12 +453,12 @@ def commands(channel, user, user1) :
               print('есть такой уже'), time.sleep(1)
               return 'in_the_dict'
           if user in smss['support']:
-            print("ого, даже в поддержку писал"), time.sleep(0.5)
+            print("ого, даже в поддержку писал"); time.sleep(0.5)
             support_chat_data = smss['support'][user]
             del smss['support'][user]
             smss['support'][rename] = support_chat_data
             smss['support'][rename]['username'] = rename
-            print(smss['support'][rename]), time.sleep(5)
+            print(smss['support'][rename]); time.sleep(5)
           smss['users'][user1]['name'] = rename
           session_data = smss['sessions'][user]
           del smss['sessions'][user]
@@ -443,24 +468,24 @@ def commands(channel, user, user1) :
           log[0] = rename
           for chat_name in smss['channels']:
             if user in smss['channels'][chat_name]['party']:
-              print("нашли бегунка"), time.sleep(0.3)
-              print(smss['channels'][chat_name]['party'][user]), time.sleep(0.5)
+              print("нашли бегунка"); time.sleep(0.3)
+              print(smss['channels'][chat_name]['party'][user]); time.sleep(0.5)
               del smss['channels'][chat_name]['party'][user]
               smss['channels'][chat_name]['party'][rename] = {'name':rename,'rank':'participant','status':'unmute'}
               break
-          else: print('не, нету в чатах'), time.sleep(0.5)
+          else: print('не, нету в чатах'); time.sleep(0.5)
           if user in smss['admins']:
             del smss['admins'][user]
             smss['admins'][rename] = rename
-          print("имя изменено!"), time.sleep(1)
+          print("имя изменено!"); time.sleep(1)
           update_write = write()
           update_write_local = write_local()
           return 'continue'
         else: 
-          print("имя не может содержать системные команды и флаги"), time.sleep(2)
+          print("имя не может содержать системные команды и флаги"); time.sleep(2)
           return 'continue'
       else: 
-        print("имя должно содержать не менее 1-го и не более 20 символов"), time.sleep(2)
+        print("имя должно содержать не менее 1-го и не более 20 символов"); time.sleep(2)
         return 'continue'
 
     elif channel == '/repassw': # смена пароля
@@ -468,11 +493,13 @@ def commands(channel, user, user1) :
       if len(repassw) > 3 and len(repassw) < 30:
         smss['users'][user1]['passw'] = repassw 
         update_write = write()
-        print("пароль успешно изменён!"), time.sleep(1)
+        print("пароль успешно изменён!"); time.sleep(1)
         return 'continue'
-      else: print("пароль должен содержать не менее 3-х и не более 30 символов"), time.sleep(1.5)
+      else: print("пароль должен содержать не менее 3-х и не более 30 символов"); time.sleep(1.5)
 
-    elif channel == '/change': return 'change' # смена учётки
+    elif channel == '/change': # смена учётки
+        l_f_a = leave_from_acc(log[0], log[1])
+        return "back_in_start_menu"
 
     elif channel == '/exit' or channel == ' ': safe_exit = _exit() # безопасный выход
 
@@ -484,9 +511,9 @@ def commands(channel, user, user1) :
         if chat_name not in forbidden:
           smss['channels'][chat_name] = {'chat_name':chat_name,'party':{log[0]:{"rank":"owner","status":"unmute"}}, 'msgs':{}}
           _system_msg = system_msg(chat_name, "новый чат")
-          print("чат успешно создан!"), time.sleep(1)
-        else: print("имя не может содержать системные команды и флаги"), time.sleep(2)
-      else: print("название должено содержать не менее 1-го и не более 20 символов"), time.sleep(1.5)
+          print("чат успешно создан!"); time.sleep(1)
+        else: print("имя не может содержать системные команды и флаги"); time.sleep(2)
+      else: print("название должено содержать не менее 1-го и не более 20 символов"); time.sleep(1.5)
     
     elif channel == "/del channel": # удаление своего чата
       chat_name = input("название: ")
@@ -495,10 +522,10 @@ def commands(channel, user, user1) :
           if smss['channels'][chat_name]['party'][user]['rank'] == 'admin':
               del smss['channels'][chat_name]
               update_write = write()
-              print(f"канал {chat_name} удалён"), time.sleep(1)
-          else: print("вы не являетесь владельцем этого чата"), time.sleep(1)
-        else: print("вы не в списке данного чата"), time.sleep(1)
-      else: print("не существует такого чата"), time.sleep(1)
+              print(f"канал {chat_name} удалён"); time.sleep(1)
+          else: print("вы не являетесь владельцем этого чата"); time.sleep(1)
+        else: print("вы не в списке данного чата"); time.sleep(1)
+      else: print("не существует такого чата"); time.sleep(1)
 
     elif channel == '/rename channel': # смена имени своего чата
       chat_name = input("текущее название чата: ")
@@ -512,24 +539,24 @@ def commands(channel, user, user1) :
               smss['channels'][rename_chat] = chat_data
               del smss['channels'][chat_name]
               _system_msg = system_msg(rename_chat, "чат переименован")
-              print("чат успешно переименован!"), time.sleep(1)
-            else: print("название должено содержать не менее 1-го и не более 20 символов"), time.sleep(1.5)
-          else: print("вы не владелец чата"), time.sleep(1.5)
-        else: print("вы не состоите в этом чате"), time.sleep(1.5)
-      else: print("такого чата не существует"), time.sleep(1.5)
+              print("чат успешно переименован!"); time.sleep(1)
+            else: print("название должено содержать не менее 1-го и не более 20 символов"); time.sleep(1.5)
+          else: print("вы не владелец чата"); time.sleep(1.5)
+        else: print("вы не состоите в этом чате"); time.sleep(1.5)
+      else: print("такого чата не существует"); time.sleep(1.5)
 
-    elif channel == '/admin': # админ-панель
+    elif channel == '/admin' or channel == 'admin': # админ-панель
       if user in smss['admins']: admin_menu()
 
     else: 
-      print("такой команды не существует"), time.sleep(1)
+      print("такой команды не существует"); time.sleep(1)
 
 def channel_commands(channel, user, user1, new_msg):
             if new_msg == '/leave' or new_msg == '/leave ': # покидание чата
                 if user in smss['channels'][channel]['party']:
                   del smss['channels'][channel]['party'][user]
                   print("вы покинули беседу")
-                  print(smss['channels'][channel]), time.sleep(1)
+                  print(smss['channels'][channel]); time.sleep(1)
                   _system_msg = system_msg(channel, f"@{user} покинул чат")
                   return 'break'
                 else: return 'break'
@@ -541,16 +568,16 @@ def channel_commands(channel, user, user1, new_msg):
               if del_num in smss['channels'][channel]['msgs']:
                   _chek_admin = check_admin(channel, user)
                   if smss['channels'][channel]['msgs'][del_num]['name'] == user or _chek_admin == 'true_admin' or _chek_admin == 'true_owner' or _chek_admin == 'in_sahur_admins':
-                    print('<'+smss['channels'][channel]['msgs'][del_num]['msg']+'>', 'удалено'), time.sleep(1)
+                    print('<'+smss['channels'][channel]['msgs'][del_num]['msg']+'>', 'удалено'); time.sleep(1)
                     smss['channels'][channel]['msgs'][del_num]['msg'] = "сообщение удалено"
                     update_write = write()
-                  else: print("это не ваше сообщение"), time.sleep(1)
-              else: print("нету такого сообщения"), time.sleep(1)
+                  else: print("это не ваше сообщение"); time.sleep(1)
+              else: print("нету такого сообщения"); time.sleep(1)
 
             elif new_msg == '/party' or new_msg == '/party ': # список участников чата
               print("участники чата:")
               for participant in smss['channels'][channel]['party']:
-                print(' @'+participant, '['+smss['channels'][channel]['party'][participant]['rank']+']'), time.sleep(0.03)
+                print(' @'+participant, '['+smss['channels'][channel]['party'][participant]['rank']+']'); time.sleep(0.03)
               input("< ")
 
             elif new_msg == '/clear' or new_msg == '/clear ': # полная очистка истории чата
@@ -561,10 +588,10 @@ def channel_commands(channel, user, user1, new_msg):
                     smss['channels'][channel]['msgs'].clear()
                     _system_msg = system_msg(channel, "чат очищен")
                     write_sms = write()
-                    print("история обнулена"), time.sleep(1)
+                    print("история обнулена"); time.sleep(1)
                     return 'continue'
-                  else: print("вы замьючены"), time.sleep(1)
-                else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1)
+                  else: print("вы замьючены"); time.sleep(1)
+                else: print("у вас недостаточно прав для таких махинаций"); time.sleep(1)
 
             elif new_msg.startswith('/add admin'): # выдача админки участнику
               elms_command = new_msg.split(" ")
@@ -577,10 +604,10 @@ def channel_commands(channel, user, user1, new_msg):
                     smss['channels'][channel]['party'][add_admin_name]['rank'] = 'admin'
                     _system_msg = system_msg(channel, f"@{add_admin_name} получил статус администратора")
                     update_write = write()
-                    print(f"пользователь {add_admin_name} теперь админ!"), time.sleep(1)
-                  else: print("вы не можете понизить владельца"), time.sleep(1)
-                else: print("пользователь не состоит в беседе"), time.sleep(1.5)
-              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1.5)
+                    print(f"пользователь {add_admin_name} теперь админ!"); time.sleep(1)
+                  else: print("вы не можете понизить владельца"); time.sleep(1)
+                else: print("пользователь не состоит в беседе"); time.sleep(1.5)
+              else: print("у вас недостаточно прав для таких махинаций"); time.sleep(1.5)
 
             elif new_msg.startswith('/add'): # добавление участника в чат
               elms_command = new_msg.split(" ")
@@ -591,15 +618,15 @@ def channel_commands(channel, user, user1, new_msg):
                 for user_id in smss['users']:
                   if add_user_name == smss['users'][user_id]['name']:
                     if add_user_name in smss['channels'][channel]['party']: 
-                      print("пользователь уже состоит в беседе"), time.sleep(1)
+                      print("пользователь уже состоит в беседе"); time.sleep(1)
                       break
                     smss['channels'][channel]['party'][add_user_name] = {'rank':'participant','status':'unmute'}
                     _system_msg = system_msg(channel, f"@{add_user_name} добавлен в чат")
                     update_write = write()
-                    print(f"пользователь {add_user_name} успешно добавлен!"), time.sleep(1)
+                    print(f"пользователь {add_user_name} успешно добавлен!"); time.sleep(1)
                     break
-                else: print("пользователя с таким именем не существует"), time.sleep(1.5)
-              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1.5)
+                else: print("пользователя с таким именем не существует"); time.sleep(1.5)
+              else: print("у вас недостаточно прав для таких махинаций"); time.sleep(1.5)
 
             elif new_msg.startswith('/demote'): # разжалование администратора
               elms_command = new_msg.split(" ")
@@ -609,14 +636,14 @@ def channel_commands(channel, user, user1, new_msg):
               if _chek_admin == 'true_owner' or _chek_admin == 'in_sahur_admins':
                 if demote_name in smss['channels'][channel]['party']:
                   if smss['channels'][channel]['party'][demote_name]['rank'] == "admin":
-                    print(smss['channels'][channel]['party'][demote_name]), time.sleep(1.5)
+                    print(smss['channels'][channel]['party'][demote_name]); time.sleep(1.5)
                     smss['channels'][channel]['party'][demote_name]['rank'] = "participant"
                     _system_msg = system_msg(channel, f"участник @{demote_name} разжалован")
                     update_write = write()
-                    print(f"админ {demote_name} успешно разжалован!"), time.sleep(1)
-                  else: print("участник не является администратором"), time.sleep(1)
-                else: print("пользователь не состоит в этой беседе"), time.sleep(1) 
-              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1)
+                    print(f"админ {demote_name} успешно разжалован!"); time.sleep(1)
+                  else: print("участник не является администратором"); time.sleep(1)
+                else: print("пользователь не состоит в этой беседе"); time.sleep(1) 
+              else: print("у вас недостаточно прав для таких махинаций"); time.sleep(1)
 
             elif new_msg.startswith('/kick'): # исключение участника из чата
               elms_command = new_msg.split(" ")
@@ -629,10 +656,10 @@ def channel_commands(channel, user, user1, new_msg):
                       del smss['channels'][channel]['party'][kick_user_name]
                       _system_msg = system_msg(channel, f"@{kick_user_name} исключён из чата")
                       update_write = write()
-                      print(f"пользователь {kick_user_name} успешно удалён из беседы!"), time.sleep(1)
-                  else: print("нельзя удалять админов и владельцев"), time.sleep(1.5)
-                else: print("пользователь не состоит в беседе"), time.sleep(1.5)
-              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1.5)
+                      print(f"пользователь {kick_user_name} успешно удалён из беседы!"); time.sleep(1)
+                  else: print("нельзя удалять админов и владельцев"); time.sleep(1.5)
+                else: print("пользователь не состоит в беседе"); time.sleep(1.5)
+              else: print("у вас недостаточно прав для таких махинаций"); time.sleep(1.5)
 
             elif new_msg.startswith('/mute'): # мут участника в чате
               elms_command = new_msg.split(" ")
@@ -645,10 +672,10 @@ def channel_commands(channel, user, user1, new_msg):
                         smss['channels'][channel]['party'][mute_user_name]['status'] = 'mute'
                         _system_msg = system_msg(channel, f"@{mute_user_name} замьючен")
                         update_write = write()
-                        print(f"пользователь {mute_user_name} успешно замьючен!"), time.sleep(1)
-                  else: print("нельзя мутить админов"), time.sleep(1.5)
-                else: print("пользователь не состоит в беседе"), time.sleep(1.5)
-              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1.5)
+                        print(f"пользователь {mute_user_name} успешно замьючен!"); time.sleep(1)
+                  else: print("нельзя мутить админов"); time.sleep(1.5)
+                else: print("пользователь не состоит в беседе"); time.sleep(1.5)
+              else: print("у вас недостаточно прав для таких махинаций"); time.sleep(1.5)
 
             elif new_msg.startswith('/unmute'): # размут участника в чате
               elms_command = new_msg.split(" ")
@@ -660,12 +687,12 @@ def channel_commands(channel, user, user1, new_msg):
                       smss['channels'][channel]['party'][mute_user_name]['status'] = 'unmute'
                       _system_msg = system_msg(channel, f"@{mute_user_name} размьючен")
                       update_write = write()
-                      print(f"пользователь {mute_user_name} успешно размьючен!"), time.sleep(1)
-                else: print("пользователь не состоит в беседе"), time.sleep(1.5)
-              else: print("у вас недостаточно прав для таких махинаций"), time.sleep(1.5)
+                      print(f"пользователь {mute_user_name} успешно размьючен!"); time.sleep(1)
+                else: print("пользователь не состоит в беседе"); time.sleep(1.5)
+              else: print("у вас недостаточно прав для таких махинаций"); time.sleep(1.5)
 
             else: 
-              print("такой команды не существует"), time.sleep(1)
+              print("такой команды не существует"); time.sleep(1)
   #except: pass
 
 def menu() : # основное меню
@@ -693,11 +720,12 @@ def menu() : # основное меню
                 else: # возможно добавить отключение отображения удалённых сообщений
                   print('['+smss['channels'][channel]['msgs'][smska]['time']+']',Fore.BLUE+smska,'@'+smss['channels'][channel]['msgs'][smska]['name']+':',smss['channels'][channel]['msgs'][smska]['msg'],Style.RESET_ALL)
                 time.sleep(0.05)
+              print("------------------------------------------")
               new_msg = input('>> ')
               if new_msg == '':  # обновление истории
                 if user in smss['channels'][channel]['party']: continue
                 else: 
-                  print("вы были исключены"), time.sleep(1)
+                  print("вы были исключены"); time.sleep(1)
                   break
               elif new_msg == ' ': break # возврат в меню
               elif new_msg.startswith("/"):
@@ -708,29 +736,30 @@ def menu() : # основное меню
               else: # запись нового сообщения
                 if user in smss['channels'][channel]['party'] or user in smss['admins']:
                   if smss['channels'][channel]['party'][user]['status'] == "unmute":
-                    num = len(smss['channels'][channel]['msgs'])+1
+                    num = len(smss['channels'][channel]['msgs']) + 1
                     smss['channels'][channel]['msgs'][num] = {'name':user,'num':num,'msg':new_msg,'time':str(datetime.datetime.now())[5:-7]}
                     write_sms = write()
                     continue
-                  else: print('вы замьючены'), time.sleep(1)
+                  else: print('вы замьючены'); time.sleep(1)
                 else: 
-                  print("вы были исключены"), time.sleep(1)
+                  print("вы были исключены"); time.sleep(1)
                   return 'break'
-          else: print(f'пользователь @{user} не состоит в беседе'), time.sleep(1)
+          else: print(f'пользователь @{user} не состоит в беседе'); time.sleep(1)
 
 
         elif mode[0] == "separate_update":
-            print("separate_update"), time.sleep(1)
+            print("separate_update"); time.sleep(1)
             subprocess.Popen([r'D:\.Profile\Desktop\hackerskie_codi\Python\projects\history_msg.exe'])
 
         elif mode[0] == "auto_update": 
-            print("auto_update"), time.sleep(1)
+            print("auto_update"); time.sleep(1)
             auto_history.main()
 
     elif channel.startswith("/") or channel == "admin":
           _menu_commands = commands(channel, user, user1)
           if _menu_commands == "continue": continue
           if _menu_commands == "break": break
+          if _menu_commands == "back_in_start_menu": return "back_in_start_menu"
     
 
     elif channel == "help" or channel == '/help': # шпоргалка 
@@ -760,11 +789,21 @@ def menu() : # основное меню
       print('/unmute <имя> - размутить участника')
       print('Пробел практически во всех полях ввода - возврат назад')
       input("< ")
-    else: print("нету таких"), time.sleep(1)
+    else: print("нету таких"); time.sleep(1)
+
+def leave_from_acc(name, _id):
+        flag[0] = 'change'
+        smss['users'][_id]['activity'] = "inactive"
+        del smss['sessions'][name]
+        local['login'].clear()
+        local['status'] = "False"
+        update_write_local = write_local()
+        update_write = write()
+        print(local); time.sleep(1)
 
 
 def start_menu() : # начальное меню
-  if local['status'] == 'True': return "loginned"
+  if local['status'] == 'True' and len(local['login']) > 2: return "loginned"
   while True:
     try:
       print("[1] - Вход")
@@ -790,22 +829,14 @@ def main ():  # центральная догма
           if r0 == 'exit': continue
           if r0 == 'allowed': continue
         else: pass
-
+    
     def main_login() : 
         a1 = login()
         if a1 == "exit": return "exit"
     def main_menu() :
       while True:
         a2 = menu()
-        if a2 == 'change': 
-          flag[0] = 'change'
-          smss['users'][log[1]]['activity'] = "inactive"
-          del smss['sessions'][log[0]]
-          local['login'].clear()
-          local['status'] = "False"
-          print(local), time.sleep(1)
-          update_write_local = write_local()
-          update_write = write()
+        if a2 == "back_in_start_menu": return "back_in_start_menu"
         if a2 == 'leave': continue
         if a2 == 'svo_1': continue
         if a2 == 'svo_2': break
@@ -815,6 +846,7 @@ def main ():  # центральная догма
     while True: # основной исполняемый алгоритм
 
       def loop_one(): # поток основной
+       while not stop_event.is_set():
         while True:
           _read_local = read_local()
           _read = read()
@@ -827,21 +859,26 @@ def main ():  # центральная догма
             b1 = main_login()
             if b1 == "exit": continue
             b2 = main_menu()
+            if b2 == "back_in_start_menu": continue
             break
       def loop_two(): # поток чтения
+       while not stop_event.is_set():
         while True:
-          time.sleep(0.1)
+          time.sleep(1)
           _read_local = read_local()
           _read = read()
 
-      t1 = threading.Thread(target=loop_one)
-      t2 = threading.Thread(target=loop_two)
+      stop_event = threading.Event()
+      t1 = threading.Thread(target=loop_one) #, args=(stop_event,))
+      t2 = threading.Thread(target=loop_two) # , args=(stop_event,))
       t1.start()
       t2.start()
+      stop_event.set()
       t1.join()
       t2.join()
       _exit()
-      
-main_1 = main()
+
+if __name__ == "__main__":
+  main_1 = main()
 
 
