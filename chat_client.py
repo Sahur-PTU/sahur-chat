@@ -45,6 +45,7 @@ print(version) # сделать проверку на обновления
 # key/read
 # key/write/msg
 
+
 log = [None, None, None, None]
 flag = [None, None, None, None]
 errors = [None] 
@@ -53,7 +54,9 @@ mode = ["manual_update"]
 forbidden = ['help','rename','repassw','change','exit',' ','support','create','rename chat','del chat','party','clear','leave','add','kick',
 'mute','unmute','admins','base','users','channels','chats','sessions','support','id search','name search','ban','unban','del user','del channel']
 
-local = {"login":{}, "status":"False", "settings":{"mode":"manual_update"}, "cache":{"channel":"0001", "username":"user_2"}}
+local = { "login": {}, "status":"False", 
+          "settings": {"mode":"manual_update", "theme":"standart"}, 
+          "cache": {"channel":"0001", "username":"user_2"} }
 
 smss = {
   "sessions" : {      
@@ -69,14 +72,17 @@ smss = {
       "number":"1",
       "username":"user_2",
       "adminname":"",
-      "msgs":{ "1": { "name":"user_2", "num":1, "msg": "почему на реботает смена аккаунтов?", "time": "09-06 16:36:29"}, } } },
+      "msgs":{ "1": { "name":"user_2", "num":1, "msg": "почему на реботает смена аккаунтов?", "time": "09-06 16:36:29"}, } 
+        } 
+      },
   
   "admins": {"user_1" : "user_1"},
-  "users": { "1" : {"id": "1", "name":"user_1", "passw":"1234", "activity":"inactive", "status":"unblocked", "reg_date":""},
-             "2" : {"id": "2", "name":"user_2", "passw":"1234", "activity":"inactive", "status":"unblocked", "reg_date":""},
-             "3" : {"id": "3", "name":"user_3", "passw":"1234", "activity":"inactive", "status":"unblocked", "reg_date":""} },
+  "users": { "1" : {"id": "1", "name":"user_1", "passw":"1234", "activity":"inactive", "status":"unblocked", "reg_date":"26.07.2026"},
+             "2" : {"id": "2", "name":"user_2", "passw":"1234", "activity":"inactive", "status":"unblocked", "reg_date":"04.07.2026"},
+             "3" : {"id": "3", "name":"user_3", "passw":"1234", "activity":"inactive", "status":"unblocked", "reg_date":"09.08.2026"} 
+             },
 
-  "channels":{
+  "channels": {
     "0001": {
       "chat_name":"0001",
       "party": { "user_1" : {'rank':'owner', 'status':'unmute'}, 
@@ -420,7 +426,9 @@ def commands(channel, user, user1) :
 
     elif channel == '/settings': 
         print("[1] - Режим отображения истории"); time.sleep(0.1)
-        print("[2] - Назад"); time.sleep(0.1)
+        print("[2] - Локальное хранилище"); time.sleep(0.1)
+        print("[3] - Персонализация"); time.sleep(0.1)
+        print("[ ] - Назад"); time.sleep(0.1)
         de = input("> ")
         if de == '1': 
           print("[1] - Ручное обновление"); time.sleep(0.1)
@@ -433,7 +441,14 @@ def commands(channel, user, user1) :
           else: return 'continue'
           _write_local = write_local()
           print("настройки сохранены"); time.sleep(1)
-        elif de == '2' or de == ' ': return 'continue'
+        elif de == '2': 
+          print(" [1] - очистить хранилище")
+          print(" [ ] - назад")
+          de = input(" > ")
+        elif de == '3':
+          print("доступные цветовые темы: \n [1] - стандартная\n [2] - красочная-1\n [3] - ")
+          de = input(" > ")
+        elif de == ' ' or de == ' ': return 'continue'
 
 
     elif channel == '/channels': # список чатов
