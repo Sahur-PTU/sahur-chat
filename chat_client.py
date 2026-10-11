@@ -46,15 +46,17 @@ print(version) # сделать проверку на обновления
 # key/write/msg
 
 
+server_data = {'ip':"", 'domain':"", 'status':""}
 log = [None, None, None, None]
 flag = [None, None, None, None]
 errors = [None] 
 mode = ["manual_update"]
+theme = {'color_1':"", 'color_2':"", 'color_3':""}
 
 forbidden = ['help','rename','repassw','change','exit',' ','support','create','rename chat','del chat','party','clear','leave','add','kick',
 'mute','unmute','admins','base','users','channels','chats','sessions','support','id search','name search','ban','unban','del user','del channel']
 
-local = { "login": {}, "status":"False", 
+local = { "login": {}, "status": "False", 
           "settings": {"mode":"manual_update", "theme":"standart"}, 
           "cache": {"channel":"0001", "username":"user_2"} }
 
@@ -72,7 +74,7 @@ smss = {
       "number":"1",
       "username":"user_2",
       "adminname":"",
-      "msgs":{ "1": { "name":"user_2", "num":1, "msg": "почему на реботает смена аккаунтов?", "time": "09-06 16:36:29"}, } 
+      "msgs":{ "1": { "name":"user_2", "num":1, "msg": "почему на реботает смена аккаунтов?", "time": "09-06 16:36:29"} } 
         } 
       },
   
@@ -88,17 +90,23 @@ smss = {
       "party": { "user_1" : {'rank':'owner', 'status':'unmute'}, 
                  "user_2" : {'rank':'participant', 'status':'unmute'}},
       "msgs": {
-        "1": { "name":"user_1", "num":1, "msg": "svo0", "time": "07-31 15:36:29"}, 
-        "2": { "name":"user_2", "num":1, "msg": "svo1", "time": "07-31 15:36:29"} } }
-        }
+        "1": { "name":"user_1", "num":1, "msg": "первое сообщение", "time": "07-31 15:36:29"}, 
+        "2": { "name":"user_2", "num":1, "msg": "второе", "time": "07-31 15:36:29"} 
+        } 
+      }
     }
+  }
+
+general_file_info = ["data/smski.json", "smski.json", smss]
+local_file_info = ["data/local.json", "local.json", local]
 
 parameters = {'system':"none", 'clearOutput':'none','runFile':'none'}
 def crossPlatform():
   global parameters
   if sys.platform == "win32": parameters = {'system': "win32", 'clearOutput': "cls", 'runFile': "os.startfile"}
-  if sys.platform == "darwin": parameters = {'system': "drawin", 'clearOutput':"clear",'runFile': "subprocess.run"}
-  if sys.platform == "xdg-open": parameters = {'system': "xdg-open", 'clearOutput':"clear", 'runFile': "subprocess.run"}
+  if sys.platform == "darwin": parameters = {'system': "drawin", 'clearOutput':"clear",'runFile': "subprocess.Popen"}
+  if sys.platform == "xdg-open": parameters = {'system': "xdg-open", 'clearOutput':"clear", 'runFile': "subprocess.Popen"}
+  if sys.platform == "linux": parameters = {'system': "linux", 'clearOutput':"clear", 'runFile': "subprocess.Popen"}
 
 # вывод в цикле до конца ввсех сообщений а затем поле ввода, если ввод "" то выход, если " " то обновление истории, все что иначе записывается как сообщение
 
@@ -108,39 +116,26 @@ def error(err, sec): # функция обработки ошибки
 
 # os.mkdir('data')
 
-def write_local() : # запись локальных данных
-  with open('data/local.json', 'w', encoding='utf-8') as file:  
-    json.dump(local, file, ensure_ascii=False, indent=2)
+def json_write(path, filename, data) : # запись данных
+  with open(path, 'w', encoding='utf-8') as file:  
+    json.dump(data, file, ensure_ascii=False, indent=2)
 
-def read_local(): # чтение локальных данных
+def json_read(path, filename, data) : # чтение данных
   try: 
-    with open('data/local.json', 'r', encoding='utf-8') as file:
+    with open(path, 'r', encoding='utf-8') as file:
       new_data = json.load(file)
-      local.clear(); local.update(new_data)
+      data.clear(); data.update(new_data)
   except FileNotFoundError: 
-    print('файл "local.json" не найден'); time.sleep(1)
-    _write_local = write_local(); print("создан в локальной папке"); time.sleep(1)
-
-
-def write() : # запись данных
-  with open('data/smski.json', 'w', encoding='utf-8') as file:  
-    json.dump(smss, file, ensure_ascii=False, indent=2)
-
-def read() : # чтение данных
-  try: 
-    with open('data/smski.json', 'r', encoding='utf-8') as file:
-      new_data = json.load(file)
-      smss.clear(); smss.update(new_data)
-  except FileNotFoundError: 
-    print('файл "smski.json" не найден'); time.sleep(1)
-    _write = write(); print("создан в локальной папке"); time.sleep(1)
+    print(f'файл "{filename}" не найден'); time.sleep(1)
+    _write = json_write(path, filename, data)
+    print("создан в локальной папке"); time.sleep(1)
 
 
 def _exit(): # безопасный выход
   print(log), time.sleep(0.5)
   if log[1] in smss['users']: smss['users'][log[1]]['activity'] = "inactive" 
-  update_write_local = write_local()
-  update_write = write()
+  update_write_local = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
+  update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
   flag[1] = True
   print('сохранение'); time.sleep(0.5)
   sys.exit()
@@ -152,6 +147,12 @@ def on_exit(): # отслеживание выхода
       print("завершаемся"); time.sleep(0.5)
       safe_exit = _exit() 
 
+def theme_setup(theme): # смена темы !!! доработать !!!
+  if theme == 'standart':
+    theme = Style.RESET_ALL, Style.RESET_ALL, Style.RESET_ALL
+  if theme == 'красочная-1':
+    theme = Fore.BLUE, Fore.CYAN, Fore.GREEN
+
 def check_admin(channel, username) : # сверка имени админа в базе
   if username in smss['admins']: return "in_sahur_admins"
   if smss['channels'][channel]['party'][username]['rank'] == 'admin': return "true_admin"
@@ -161,12 +162,13 @@ def check_admin(channel, username) : # сверка имени админа в �
 def system_msg(chat_name, msg) : # отправка системного сообщения
     num = len(smss['channels'][chat_name]['msgs']) + 1
     smss['channels'][chat_name]['msgs'][num] = {'name':'sys','num':num,'msg':msg,'time':str(datetime.datetime.now())[5:-7]}
-    update_write = write()
+    update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
+
 
 def support_chat(chat_n): # чат с поддержкой 
   while True:
     os.system(parameters['clearOutput'])
-    _read = read()
+    _read = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
     if chat_n in smss['support']:
         print(Fore.YELLOW,"support chat :", chat_n, Style.RESET_ALL)
         for smska in smss['support'][chat_n]['msgs']:
@@ -181,12 +183,12 @@ def support_chat(chat_n): # чат с поддержкой
         else: 
           num = len(smss['support'][chat_n]['msgs']) + 1
           smss['support'][chat_n]['msgs'][num] = {'name':log[0],'num':num,'msg':new_msg,'time':str(datetime.datetime.now())[5:-7]}
-          update_write = write()
+          update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
           continue
     else: 
       num = len(smss['support'])
       smss['support'][chat_n] = {"number":num,"username":log[0],"adminname":"","msgs":{"1":{'name':'sys','num':num,'msg':'новый чат','time':str(datetime.datetime.now())[5:-7]} }}
-      update_write = write()
+      update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
       continue
 
 
@@ -217,7 +219,7 @@ def api() : # обмен с сервером
 def admin_menu(): # админ панель
   while True:
     #admin_key = input("key: ")
-    _read = read()
+    _read = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
     command = input(">_ ")
     if command == 'help': # шпоргалка админа
       print("/base - вывести всю базу") 
@@ -260,13 +262,13 @@ def admin_menu(): # админ панель
           smss['users'][id1] = {"id":id1, "name":smss['applications'][applc1]['name'], "passw":smss['applications'][applc1]['passw'],
                                 "activity": "inactive", "status": "unblocked", "reg_date": str(datetime.datetime.now())[:-10] }
           del smss['applications'][applc1]
-          update_write = write()
+          update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
           print("пользователь успешно добавлен!"); time.sleep(1)
         else: pass
       else: print("нету такой"); time.sleep(1)
     elif command == "support" or command == '/support': # меню поддержки
      while True:
-      _read = read()
+      _read = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
       if len(smss['support']) > 0:
         for user in smss["support"]: 
           if len(smss['support'][user]) > 0:
@@ -278,7 +280,7 @@ def admin_menu(): # админ панель
           else: pass
       else: print("none")
       chat_n = input("название чата: ")
-      _read = read()
+      _read = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
       if chat_n == ' ': break 
       if chat_n in smss['support']: 
           support_chat(chat_n)
@@ -299,13 +301,13 @@ def admin_menu(): # админ панель
       if id1 in smss['users']:
         print(f"пользователь {id1} {smss['users'][id1]['name']} заблокирован")
         smss['users'][id1]['status'] = 'blocked'
-        update_write = write()
+        update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
     elif command == "unban" or command == '/unban': # разблокировка пользователя
       id1 = input("id: ")
       if id1 in smss['users']:
         print(f"пользователь {id1} {smss['users'][id1]['name']} разблокирован")
         smss['users'][id1]['status'] = 'unblocked'
-        update_write = write()
+        update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
     elif command == "del user" or command == '/del user': # удаление пользователя
       id1 = input("id: ")
       if id1 in smss['users']:
@@ -315,7 +317,7 @@ def admin_menu(): # админ панель
         if de == 'y' or de == 'Y':
           l_f_a = leave_from_acc(log[0], log[1])
           del smss['users'][id1]
-          update_write = write()
+          update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
           print(f"пользователь {id1} {del_username} удалён"); time.sleep(1)
           if id1 == log[1]: 
             return "back_in_start_menu"
@@ -325,7 +327,7 @@ def admin_menu(): # админ панель
       if c_name in smss['channels']:
         print(f"канал {c_name} удалён")
         del smss['channels'][c_name]
-        update_write = write()
+        update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
       else: print("нет таких")
     elif command == "exit" or command == "/exit" or command == " ": break # выход из админ-панели
 
@@ -333,7 +335,7 @@ def admin_menu(): # админ панель
 def login(): # авторизация
   def login_1(): # авторизация с нуля
     while True:
-      data = read()
+      data = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
       user = input("name: ")
       if user == " ": return "exit"
       s = False
@@ -351,8 +353,8 @@ def login(): # авторизация
               smss["sessions"][user] = {'first':first, 'last':str(datetime.datetime.now())[:-10]}
               local['status'] = "True"
               local['login'] = {"name":user,"id":user1,"num_session":num_session}
-              update_write_local = write_local()
-              update_write = write()
+              update_write_local = json_write(local_file_info[0], local_file_info[1], local_file_info[2])
+              update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
               s = True
               log[0] = user
               log[1] = user1
@@ -372,8 +374,8 @@ def login(): # авторизация
       elif s == True: break
   #os.system(parameters['clearOutput'])
   while True:
-    _read_local = read_local()
-    _read = read()
+    _read_local = json_write(local_file_info[0], local_file_info[1], local_file_info[2])
+    _read = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
     if local['status'] == "True" and len(local['login']) > 2: # проверка на наличия сохранения логина в локальном хранилище
       if flag[0] != 'change': 
         if flag[0] != 'leave acc':
@@ -386,7 +388,7 @@ def login(): # авторизация
           if log[0] in smss['sessions']: first = smss['sessions'][log[0]]['first']
           else: first = str(datetime.datetime.now())[:-10]
           smss["sessions"][log[0]] = {'first':first, 'last':str(datetime.datetime.now())[:-10]}
-          update_write = write()
+          update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
           break
         else: 
           _login_1 = login_1()
@@ -413,7 +415,7 @@ def registration() : # регистрация
         else:
           num = str(len(smss['applications']) + 1) 
           smss['applications'][num] = {"num":num,"name":name, 'passw':passw, "time":str(datetime.datetime.now())[5:-7]} 
-          update_write = write()
+          update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
           print("заявка на регистрацию успешно отправлена!"); time.sleep(1)
           print("модерация мессенджера рассмотрит её в ближайшее время"); time.sleep(1.5)
           return "allowed"
@@ -439,7 +441,7 @@ def commands(channel, user, user1) :
           elif de == '2': local['settings']['mode'] = "separate_update"
           elif de == '3': local['settings']['mode'] = "auto_update"
           else: return 'continue'
-          _write_local = write_local()
+          _write_local = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
           print("настройки сохранены"); time.sleep(1)
         elif de == '2': 
           print(" [1] - очистить хранилище")
@@ -493,8 +495,8 @@ def commands(channel, user, user1) :
             del smss['admins'][user]
             smss['admins'][rename] = rename
           print("имя изменено!"); time.sleep(1)
-          update_write = write()
-          update_write_local = write_local()
+          update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
+          update_write_local = json_write(local_file_info[0], local_file_info[1], local_file_info[2])
           return 'continue'
         else: 
           print("имя не может содержать системные команды и флаги"); time.sleep(2)
@@ -507,7 +509,7 @@ def commands(channel, user, user1) :
       repassw = input('новый пароль: ')
       if len(repassw) > 3 and len(repassw) < 30:
         smss['users'][user1]['passw'] = repassw 
-        update_write = write()
+        update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
         print("пароль успешно изменён!"); time.sleep(1)
         return 'continue'
       else: print("пароль должен содержать не менее 3-х и не более 30 символов"); time.sleep(1.5)
@@ -536,7 +538,7 @@ def commands(channel, user, user1) :
         if user in smss['channels'][chat_name]['party']:
           if smss['channels'][chat_name]['party'][user]['rank'] == 'admin':
               del smss['channels'][chat_name]
-              update_write = write()
+              update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
               print(f"канал {chat_name} удалён"); time.sleep(1)
           else: print("вы не являетесь владельцем этого чата"); time.sleep(1)
         else: print("вы не в списке данного чата"); time.sleep(1)
@@ -585,7 +587,7 @@ def channel_commands(channel, user, user1, new_msg):
                   if smss['channels'][channel]['msgs'][del_num]['name'] == user or _chek_admin == 'true_admin' or _chek_admin == 'true_owner' or _chek_admin == 'in_sahur_admins':
                     print('<'+smss['channels'][channel]['msgs'][del_num]['msg']+'>', 'удалено'); time.sleep(1)
                     smss['channels'][channel]['msgs'][del_num]['msg'] = "сообщение удалено"
-                    update_write = write()
+                    update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
                   else: print("это не ваше сообщение"); time.sleep(1)
               else: print("нету такого сообщения"); time.sleep(1)
 
@@ -602,7 +604,7 @@ def channel_commands(channel, user, user1, new_msg):
                   if smss['channels'][channel]['party'][user]['status'] == "unmute" or user in smss['admins']:
                     smss['channels'][channel]['msgs'].clear()
                     _system_msg = system_msg(channel, "чат очищен")
-                    write_sms = write()
+                    write_sms = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
                     print("история обнулена"); time.sleep(1)
                     return 'continue'
                   else: print("вы замьючены"); time.sleep(1)
@@ -618,7 +620,7 @@ def channel_commands(channel, user, user1, new_msg):
                   if smss['channels'][channel]['party'][add_admin_name]['rank'] != 'owner' or user in smss['admins']:
                     smss['channels'][channel]['party'][add_admin_name]['rank'] = 'admin'
                     _system_msg = system_msg(channel, f"@{add_admin_name} получил статус администратора")
-                    update_write = write()
+                    update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
                     print(f"пользователь {add_admin_name} теперь админ!"); time.sleep(1)
                   else: print("вы не можете понизить владельца"); time.sleep(1)
                 else: print("пользователь не состоит в беседе"); time.sleep(1.5)
@@ -637,7 +639,7 @@ def channel_commands(channel, user, user1, new_msg):
                       break
                     smss['channels'][channel]['party'][add_user_name] = {'rank':'participant','status':'unmute'}
                     _system_msg = system_msg(channel, f"@{add_user_name} добавлен в чат")
-                    update_write = write()
+                    update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
                     print(f"пользователь {add_user_name} успешно добавлен!"); time.sleep(1)
                     break
                 else: print("пользователя с таким именем не существует"); time.sleep(1.5)
@@ -654,7 +656,7 @@ def channel_commands(channel, user, user1, new_msg):
                     print(smss['channels'][channel]['party'][demote_name]); time.sleep(1.5)
                     smss['channels'][channel]['party'][demote_name]['rank'] = "participant"
                     _system_msg = system_msg(channel, f"участник @{demote_name} разжалован")
-                    update_write = write()
+                    update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
                     print(f"админ {demote_name} успешно разжалован!"); time.sleep(1)
                   else: print("участник не является администратором"); time.sleep(1)
                 else: print("пользователь не состоит в этой беседе"); time.sleep(1) 
@@ -670,7 +672,7 @@ def channel_commands(channel, user, user1, new_msg):
                   if smss['channels'][channel]['party'][kick_user_name]['rank'] != "admin" or smss['channels'][channel]['party'][kick_user_name]['rank'] != "owner":
                       del smss['channels'][channel]['party'][kick_user_name]
                       _system_msg = system_msg(channel, f"@{kick_user_name} исключён из чата")
-                      update_write = write()
+                      update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
                       print(f"пользователь {kick_user_name} успешно удалён из беседы!"); time.sleep(1)
                   else: print("нельзя удалять админов и владельцев"); time.sleep(1.5)
                 else: print("пользователь не состоит в беседе"); time.sleep(1.5)
@@ -686,7 +688,7 @@ def channel_commands(channel, user, user1, new_msg):
                   if smss['channels'][channel]['party'][mute_user_name]['rank'] != "admin" or smss['channels'][channel]['party'][user]['rank'] != 'owner':
                         smss['channels'][channel]['party'][mute_user_name]['status'] = 'mute'
                         _system_msg = system_msg(channel, f"@{mute_user_name} замьючен")
-                        update_write = write()
+                        update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
                         print(f"пользователь {mute_user_name} успешно замьючен!"); time.sleep(1)
                   else: print("нельзя мутить админов"); time.sleep(1.5)
                 else: print("пользователь не состоит в беседе"); time.sleep(1.5)
@@ -701,7 +703,7 @@ def channel_commands(channel, user, user1, new_msg):
                 if mute_user_name in smss['channels'][channel]['party']:
                       smss['channels'][channel]['party'][mute_user_name]['status'] = 'unmute'
                       _system_msg = system_msg(channel, f"@{mute_user_name} размьючен")
-                      update_write = write()
+                      update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
                       print(f"пользователь {mute_user_name} успешно размьючен!"); time.sleep(1)
                 else: print("пользователь не состоит в беседе"); time.sleep(1.5)
               else: print("у вас недостаточно прав для таких махинаций"); time.sleep(1.5)
@@ -714,7 +716,7 @@ def menu() : # основное меню
   user, user1, s, num_session = log
   while s == True:
     os.system(parameters['clearOutput'])
-    read_sms = read()
+    read_sms = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
     if user in smss["admins"]: print("[admin]","@"+ user)
     else: print(" @"+user)
     try: channel = input('channel : ')
@@ -727,7 +729,7 @@ def menu() : # основное меню
           if user in smss['channels'][channel]["party"] or user in smss["admins"]:
             while True:
               os.system(parameters['clearOutput'])
-              read_sms = read()
+              read_sms = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
               print(Fore.YELLOW+" Channel :", channel, Style.RESET_ALL)
               for smska in smss['channels'][channel]['msgs']:
                 if smss['channels'][channel]['msgs'][smska]['name'] == user:
@@ -753,7 +755,7 @@ def menu() : # основное меню
                   if smss['channels'][channel]['party'][user]['status'] == "unmute":
                     num = len(smss['channels'][channel]['msgs']) + 1
                     smss['channels'][channel]['msgs'][num] = {'name':user,'num':num,'msg':new_msg,'time':str(datetime.datetime.now())[5:-7]}
-                    write_sms = write()
+                    write_sms = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
                     continue
                   else: print('вы замьючены'); time.sleep(1)
                 else: 
@@ -812,8 +814,8 @@ def leave_from_acc(name, _id):
         del smss['sessions'][name]
         local['login'].clear()
         local['status'] = "False"
-        update_write_local = write_local()
-        update_write = write()
+        update_write_local = json_write(local_file_info[0], local_file_info[1], local_file_info[2])
+        update_write = json_write(general_file_info[0], general_file_info[1], general_file_info[2])
         print(local); time.sleep(1)
 
 
@@ -863,8 +865,8 @@ def main ():  # центральная догма
       def loop_one(): # поток основной
        while not stop_event.is_set():
         while True:
-          _read_local = read_local()
-          _read = read()
+          _read_local = json_read(local_file_info[0], local_file_info[1], local_file_info[2])
+          _read = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
           mode[0] = local['settings']['mode']
           if flag_1 == 'in_the_dict':
             b2 = main_menu()
@@ -880,8 +882,8 @@ def main ():  # центральная догма
        while not stop_event.is_set():
         while True:
           time.sleep(1)
-          _read_local = read_local()
-          _read = read()
+          _read_local = json_read(local_file_info[0], local_file_info[1], local_file_info[2])
+          _read = json_read(general_file_info[0], general_file_info[1], general_file_info[2])
 
       stop_event = threading.Event()
       t1 = threading.Thread(target=loop_one) #, args=(stop_event,))
