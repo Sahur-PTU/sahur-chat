@@ -25,6 +25,7 @@ import auto_history
 # 9. Нормальзовать работу потоков и их остановке по команде
 # 10. Начать тестировку API
 # 11. Сделать протокол полного отключения работы мессенджера прямо из клиента админа 
+# 12. Оформить обмен файлами
 
 init()  
 # os.system('mode con: cols=60 lines=17')
@@ -103,10 +104,11 @@ local_file_info = ["data/local.json", "local.json", local]
 parameters = {'system':"none", 'clearOutput':'none','runFile':'none'}
 def crossPlatform():
   global parameters
-  if sys.platform == "win32": parameters = {'system': "win32", 'clearOutput': "cls", 'runFile': "os.startfile"}
-  if sys.platform == "darwin": parameters = {'system': "drawin", 'clearOutput':"clear",'runFile': "subprocess.Popen"}
-  if sys.platform == "xdg-open": parameters = {'system': "xdg-open", 'clearOutput':"clear", 'runFile': "subprocess.Popen"}
-  if sys.platform == "linux": parameters = {'system': "linux", 'clearOutput':"clear", 'runFile': "subprocess.Popen"}
+  os = sys.platform
+  if os == "win32": parameters = {'system': "win32", 'clearOutput': "cls", 'runFile': "os.startfile", 'createFile': "echo. >"}
+  if os == "darwin": parameters = {'system': "drawin", 'clearOutput': "clear",'runFile': "subprocess.Popen", 'createFile': "touch"}
+  if os == "linux": parameters = {'system': "linux", 'clearOutput': "clear", 'runFile': "subprocess.Popen", 'createFile': "touch"}
+  if os == "android": parameters = {'system': "android", 'clearOutput': "clear", 'runFile': "subprocess.Popen", 'createFile': "touch"}
 
 # вывод в цикле до конца ввсех сообщений а затем поле ввода, если ввод "" то выход, если " " то обновление истории, все что иначе записывается как сообщение
 
@@ -192,6 +194,32 @@ def support_chat(chat_n): # чат с поддержкой
       continue
 
 
+def directory(action) : # создание, управление и проверка целостности локального хранилища 
+  try: 
+    def create(class_name, directory):
+      if class_name == 'all': 
+        pass
+
+      if class_name == "folder":
+        os.mkdir(directory)
+      if class_name == "folders": 
+        os.makedirs(directory)
+
+      if class_name == "file":
+        with open(class_name, 'w', encoding='utf-8') as file:
+          pass
+        with open(class_name, 'w', encoding='utf-8') as file:
+          pass
+      
+
+    
+    if action == "create": create('local.json')
+
+        
+  except: pass
+
+directory('create')
+exit()
 
 def api() : # обмен с сервером
   try:
